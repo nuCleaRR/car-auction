@@ -1,4 +1,5 @@
 using AutoMapper;
+using Contracts;
 
 public class MappingProfiles: Profile
 {
@@ -9,5 +10,9 @@ public class MappingProfiles: Profile
         CreateMap<CreateAuctionDto, Auction>()
             .ForMember(d => d.Item, o => o.MapFrom(o => o));
         CreateMap<CreateAuctionDto, Item>();
+        CreateMap<AuctionDto, AuctionCreated>();
+        CreateMap<Auction, AuctionUpdated>().IncludeMembers(x => x.Item);
+        CreateMap<Item, AuctionUpdated>();
+
     }
 }
