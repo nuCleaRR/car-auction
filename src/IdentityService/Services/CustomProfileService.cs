@@ -4,7 +4,6 @@ using Duende.IdentityServer.Services;
 using IdentityModel;
 using IdentityService.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace IdentityService.Services;
 

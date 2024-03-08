@@ -1175,12 +1175,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5000/connect/userinfo",
+							"raw": "http://localhost:5001/connect/userinfo",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5000",
+							"port": "5001",
 							"path": [
 								"connect",
 								"userinfo"
@@ -2927,12 +2927,12 @@
 							]
 						},
 						"url": {
-							"raw": "http://localhost:5000/connect/token",
+							"raw": "http://localhost:5001/connect/token",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5000",
+							"port": "5001",
 							"path": [
 								"connect",
 								"token"
@@ -3328,7 +3328,7 @@
 		},
 		{
 			"key": "identitySvc",
-			"value": "http://localhost:5000",
+			"value": "http://localhost:5001",
 			"type": "string"
 		},
 		{
