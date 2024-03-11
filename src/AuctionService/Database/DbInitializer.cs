@@ -1,5 +1,6 @@
 
 
+using AuctionService.Models;
 using Microsoft.EntityFrameworkCore;
 
 public static class DbInitializer

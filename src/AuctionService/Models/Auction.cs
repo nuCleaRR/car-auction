@@ -1,3 +1,5 @@
+using AuctionService.Models;
+
 public class Auction
 {
     public Guid Id { get; set; }
