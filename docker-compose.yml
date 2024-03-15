@@ -1,3 +1,9 @@
+networks:
+  custom:
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+
 services:
   postgres:
     image: postgres
@@ -7,6 +13,8 @@ services:
       - 5432:5432
     volumes:
       - pgdata:/var/lib/postgres/data
+    networks:
+      custom:
   mongodb:
     image: mongo
     environment:
@@ -16,23 +24,27 @@ services:
       - 27017:27017
     volumes: 
       - mongodata:/var/lib/mongodb/data
+    networks:
+      custom:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
       - 5672:5672
       - 15672:15672
+    networks:
+      custom:
   auction-svc:
     image: iamalexey/auction-svc:latest
     build:
       context: .
       dockerfile: src/AuctionService/Dockerfile
     environment:
-      - ASPNET_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
       - ASPNETCORE_URLS=http://+:7777
       - RabbitMq__Host=rabbitmq
       - ConnectionStrings__DefaultConnection=Server=postgres:5432;User Id=postgres;Password=postgrespw;Database=auctions
-      - IdentityServerUrl=http://identity-svc
+      - IdentityServiceUrl=http://identity-svc
       - Kestrel__Endpoints__Grpc__Protocols=Http2
       - Kestrel__Endpoints__Grpc__Url=http://+:7777
       - Kestrel__Endpoints__WebApi__Protocols=Http1
@@ -43,13 +55,15 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+    networks:
+      custom:
   search-svc:
     image: iamalexey/search-svc:latest
     build:
       context: .
       dockerfile: src/SearchService/Dockerfile
     environment:
-      - ASPNET_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
       - RabbitMq__Host=rabbitmq
       - ConnectionStrings__MongoDbConnection=mongodb://root:mongopw@mongodb
@@ -59,6 +73,8 @@ services:
     depends_on:
       - mongodb
       - rabbitmq
+    networks:
+      custom:
   identity-svc:
     image: iamalexey/identity-svc:latest
     build:
@@ -67,11 +83,14 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=http://+:80
+      - ClientApp=http://app.car-auction.com
       - ConnectionStrings__DefaultConnection=Server=postgres:5432;User Id=postgres;Password=postgrespw;Database=identity
-    ports:
-      - 5001:80
+      - VIRTUAL_HOST=id.car-auction.com
     depends_on:
       - postgres
+    networks:
+      custom:
+        ipv4_address: 10.5.0.200
   gateway-svc:
     image: iamalexey/gateway-svc:latest
     build:
@@ -80,25 +99,29 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=http://+:80
-    ports:
-      - 6001:80
+      - ClientApp=https://app.car-auction.com
+      - VIRTUAL_HOST=api.car-auction.com
+    networks:
+      custom:
   bid-svc:
     image: iamalexey/bid-svc:latest
     build:
       context: .
       dockerfile: src/BiddingService/Dockerfile
     environment:
-      - ASPNET_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
       - RabbitMq__Host=rabbitmq
       - ConnectionStrings__BidDbConnection=mongodb://root:mongopw@mongodb
-      - IdentityServerUrl=http://identity-svc
+      - IdentityServiceUrl=http://identity-svc
       - GrpcAuction=http://auction-svc:7777
     ports:
       - 7003:80
     depends_on:
       - mongodb
       - rabbitmq
+    networks:
+      custom:
   notify-svc:
     image: iamalexey/notify-svc:latest
     build:
@@ -111,8 +134,41 @@ services:
     ports:
       - 7004:80
     depends_on:
-      - mongodb
       - rabbitmq
+    networks:
+      custom:
+  web-app:
+    image: iamalexey/web-app:latest
+    build:
+      context: .
+      dockerfile: frontend/web-app/Dockerfile
+    volumes:
+      -  /var/lib/web/data
+    extra_hosts:
+      - id.car-auction.com:10.5.0.200
+    environment:
+      - NEXTAUTH_SECRET=secret
+      - NEXTAUTH_URL=http://app.car-auction.com
+      - NEXTAUTH_URL_INTERNAL=http://web-app:3000
+      - API_URL=http://gateway-svc/
+      - ID_URL=http://id.car-auction.com
+      - NEXT_PUBLIC_NOTIFY_URL=http://gateway-svc/notifications
+      - VIRTUAL_HOST=app.car-auction.com
+      - VIRTUAL_PORT=3000
+
+    networks:
+      custom:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      custom:
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./devcerts:/etc/nginx/certs
+
 volumes:
   pgdata:
   mongodata:
