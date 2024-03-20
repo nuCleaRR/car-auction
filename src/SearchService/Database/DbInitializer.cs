@@ -1,19 +1,16 @@
 using System.Text.Json;
 using MongoDB.Driver;
 using MongoDB.Entities;
+using Polly;
+using Polly.Extensions.Http;
 
 public static class DbInitializer
 {
     public async static Task Init(WebApplication app)
     {
-        try
-        {
-            await InitInternal(app);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
+        await Policy.Handle<TimeoutException>()
+            .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(10))
+            .ExecuteAndCaptureAsync(async () => await InitInternal(app));
     }
 
     private async static Task InitInternal(WebApplication app)
